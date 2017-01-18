@@ -147,7 +147,7 @@ KVM_ARGS=$@
 if [ -e /dev/vm/root ]; then
     KVM_BLK_OPTS="$KVM_RAW_BLK_OPTS"
     KVM_IMAGE=/dev/vm/root
-else
+else if [[ -z "$KVM_BLK_OPTS2" ]]; then
     BASE_IMAGE_DIR_LIST=( `ls /base_image` )
     if [ ${#BASE_IMAGE_DIR_LIST[@]} -ne 1 ]; then
     echo "/base_image directory must contain exactly one base image file"
@@ -168,6 +168,7 @@ else
             exit 3
         fi
     fi
+fi
 fi
 
 VOLUMES_DIR="/volumes/"
@@ -276,11 +277,16 @@ EOF
     echo allow $BRIDGE_IFACE >  /etc/qemu/bridge.conf
 }
 
-# need to wait until network is ready
-ISO=`generate_cloud_drive`
-if [[ $ISO ]]
+if [[ "$KVM_BLK_OPTS2" ]]
 then
-	KVM_BLK_OPTS=$KVM_BLK_OPTS" -cdrom $ISO"
+	KVM_BLK_OPTS=$KVM_BLK_OPTS2
+else
+	# need to wait until network is ready
+	ISO=`generate_cloud_drive`
+	if [[ $ISO ]]
+	then
+		KVM_BLK_OPTS=$KVM_BLK_OPTS" -cdrom $ISO"
+	fi
 fi
 
 if [ "$RANCHER_NETWORK" = "true" ] && [ -e /var/run/rancher/tap.sock ]; then
